@@ -22,6 +22,8 @@ class PartidaPage extends StatefulWidget {
 
 class _PartidaPageState extends State<PartidaPage> {
   String letraInicial = '';
+  bool terminado = false; // Control para el estado de finalización de la partida
+  bool esperandoJugador = true; // Control para esperar al segundo jugador
   Map<String, TextEditingController> campos = {
     'Nombre': TextEditingController(),
     'Apellido': TextEditingController(),
@@ -35,24 +37,62 @@ class _PartidaPageState extends State<PartidaPage> {
   @override
   void initState() {
     super.initState();
-    letraInicial = generarLetraInicial();
-    _crearSalaEnFirestore();
+    _esperarSegundoJugador();
+    _escucharEstadoPartida();
+  }
+
+  // Espera a que se conecte el segundo jugador antes de iniciar la partida
+  Future<void> _esperarSegundoJugador() async {
+    final salaRef = FirebaseFirestore.instance.collection('sala').doc(widget.player1Id);
+
+    // Escucha cambios en el documento de la sala
+    salaRef.snapshots().listen((salaDoc) async {
+      if (salaDoc.exists) {
+        if (salaDoc.data()?['player1'] != null && salaDoc.data()?['player2'] != null) {
+          // Si ambos jugadores están presentes, obtener o generar la letra inicial
+          if (salaDoc.data()?['letraInicial'] != null) {
+            setState(() {
+              letraInicial = salaDoc['letraInicial'];
+              esperandoJugador = false; // Ya hay dos jugadores conectados
+            });
+          } else {
+            // Genera una letra inicial si aún no se ha creado
+            letraInicial = generarLetraInicial();
+            await salaRef.update({
+              'letraInicial': letraInicial,
+            });
+            setState(() {
+              esperandoJugador = false;
+            });
+          }
+        }
+      } else {
+        // Si el documento de la sala aún no existe, créalo con el jugador actual
+        await salaRef.set({
+          'player1': widget.player1Name,
+          'player2': widget.player2Name,
+          'letraInicial': null,
+          'terminado': false,
+        });
+      }
+    });
+  }
+
+  // Escucha cambios en el estado de la partida para desactivar los campos si ha terminado
+  void _escucharEstadoPartida() {
+    FirebaseFirestore.instance.collection('sala').doc(widget.player1Id).snapshots().listen((snapshot) {
+      if (snapshot.exists && snapshot['terminado'] == true) {
+        setState(() {
+          terminado = true;
+        });
+      }
+    });
   }
 
   // Genera una letra inicial aleatoria
   String generarLetraInicial() {
     const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     return letras[Random().nextInt(letras.length)];
-  }
-
-  // Crea una sala en Firebase para almacenar la partida
-  Future<void> _crearSalaEnFirestore() async {
-    await FirebaseFirestore.instance.collection('sala').doc(widget.player1Id).set({
-      'player1': widget.player1Name,
-      'player2': widget.player2Name,
-      'letraInicial': letraInicial,
-      'terminado': false,
-    });
   }
 
   // Guarda las respuestas del jugador en Firebase
@@ -97,34 +137,41 @@ class _PartidaPageState extends State<PartidaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Letra: $letraInicial')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            DataTable(
-              columns: [
-                DataColumn(label: Text('Categoría')),
-                DataColumn(label: Text('Palabra')),
-              ],
-              rows: campos.keys.map((key) {
-                return DataRow(cells: [
-                  DataCell(Text(key)),
-                  DataCell(TextField(
-                    controller: campos[key],
-                    decoration: InputDecoration(hintText: 'Palabra con $letraInicial'),
-                  )),
-                ]);
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _bastaButtonPressed,
-              child: const Text('BASTA'),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text('${widget.player1Name} vs ${widget.player2Name} - Letra: $letraInicial'),
       ),
+      body: esperandoJugador
+          ? Center(child: Text('Esperando a que otro jugador se conecte...'))
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  DataTable(
+                    columns: [
+                      DataColumn(label: Text('Categoría')),
+                      DataColumn(label: Text('Palabra')),
+                    ],
+                    rows: campos.keys.map((key) {
+                      return DataRow(cells: [
+                        DataCell(Text(key)),
+                        DataCell(
+                          TextField(
+                            controller: campos[key],
+                            decoration: InputDecoration(hintText: 'Palabra con $letraInicial'),
+                            enabled: !terminado, // Desactiva el campo si el juego terminó
+                          ),
+                        ),
+                      ]);
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: terminado ? null : _bastaButtonPressed, // Desactiva el botón si el juego terminó
+                    child: const Text('BASTA'),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

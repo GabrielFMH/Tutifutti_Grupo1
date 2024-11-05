@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'partida.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -49,6 +50,40 @@ class _HomePageState extends State<HomePage> {
         'name': playerName,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+      await _matchPlayers(playerId, playerName);
+    }
+  }
+
+  Future<void> _matchPlayers(String playerId, String playerName) async {
+    CollectionReference playersCollection =
+        FirebaseFirestore.instance.collection('players');
+    QuerySnapshot playersSnapshot = await playersCollection
+        .orderBy('timestamp', descending: true)
+        .limit(2)
+        .get();
+
+    if (playersSnapshot.docs.length == 2) {
+      var player1 = playersSnapshot.docs[0];
+      var player2 = playersSnapshot.docs[1];
+
+      await FirebaseFirestore.instance.collection('sala').add({
+        'player1': {'id': player1.id, 'name': player1['name']},
+        'player2': {'id': player2.id, 'name': player2['name']},
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PartidaPage(
+            player1Id: player1.id,
+            player1Name: player1['name'],
+            player2Id: player2.id,
+            player2Name: player2['name'],
+          ),
+        ),
+      );
     }
   }
 

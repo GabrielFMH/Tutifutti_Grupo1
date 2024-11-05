@@ -1,0 +1,105 @@
+{
+  "project_info": {
+    "project_number": "704452145359",
+    "project_id": "grupo1firebase",
+    "storage_bucket": "grupo1firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704452145359:android:c4c6cc7a5b1fbefd9b07ba",
+        "android_client_info": {
+          "package_name": "com.Kahoot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxxxhmgp47BTQZ5LGnxNLR-vVaBF1H6bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704452145359:android:4aa9638ef67c8a419b07ba",
+        "android_client_info": {
+          "package_name": "com.crud.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxxxhmgp47BTQZ5LGnxNLR-vVaBF1H6bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704452145359:android:47dbdd0052c30c699b07ba",
+        "android_client_info": {
+          "package_name": "com.grupo3.firebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxxxhmgp47BTQZ5LGnxNLR-vVaBF1H6bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704452145359:android:d91a7fc8313bee219b07ba",
+        "android_client_info": {
+          "package_name": "com.kahoot.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxxxhmgp47BTQZ5LGnxNLR-vVaBF1H6bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704452145359:android:d3c702ec39fc06ef9b07ba",
+        "android_client_info": {
+          "package_name": "com.tutifruti.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxxxhmgp47BTQZ5LGnxNLR-vVaBF1H6bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

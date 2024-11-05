@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'dart:math';
 import 'partida.dart';
 import 'firebase_options.dart';
@@ -40,22 +41,33 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSearching = false;
   final TextEditingController _nameController = TextEditingController();
+  Timer? _timer;
+  String? _playerId;
+  String? _playerName;
 
   Future<void> _savePlayerData() async {
-    String playerId = Random().nextInt(1000000).toString();
-    String playerName = _nameController.text;
+    _playerId = Random().nextInt(1000000).toString();
+    _playerName = _nameController.text.trim();
 
-    if (playerName.isNotEmpty) {
-      await FirebaseFirestore.instance.collection('players').doc(playerId).set({
-        'name': playerName,
+    if (_playerName != null && _playerName!.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('players')
+          .doc(_playerId)
+          .set({
+        'name': _playerName,
         'timestamp': FieldValue.serverTimestamp(),
       });
-
-      await _matchPlayers(playerId, playerName);
+      _startMatching();
     }
   }
 
-  Future<void> _matchPlayers(String playerId, String playerName) async {
+  void _startMatching() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      await _matchPlayers();
+    });
+  }
+
+  Future<void> _matchPlayers() async {
     CollectionReference playersCollection =
         FirebaseFirestore.instance.collection('players');
     QuerySnapshot playersSnapshot = await playersCollection
@@ -67,24 +79,33 @@ class _HomePageState extends State<HomePage> {
       var player1 = playersSnapshot.docs[0];
       var player2 = playersSnapshot.docs[1];
 
-      await FirebaseFirestore.instance.collection('sala').add({
-        'player1': {'id': player1.id, 'name': player1['name']},
-        'player2': {'id': player2.id, 'name': player2['name']},
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      if (player1.id == _playerId || player2.id == _playerId) {
+        _timer?.cancel();
+        await FirebaseFirestore.instance.collection('sala').add({
+          'player1': {'id': player1.id, 'name': player1['name']},
+          'player2': {'id': player2.id, 'name': player2['name']},
+          'timestamp': FieldValue.serverTimestamp(),
+        });
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PartidaPage(
-            player1Id: player1.id,
-            player1Name: player1['name'],
-            player2Id: player2.id,
-            player2Name: player2['name'],
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PartidaPage(
+              player1Id: player1.id,
+              player1Name: player1['name'],
+              player2Id: player2.id,
+              player2Name: player2['name'],
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override

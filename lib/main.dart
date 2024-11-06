@@ -72,12 +72,21 @@ class _HomePageState extends State<HomePage> {
         FirebaseFirestore.instance.collection('players');
     QuerySnapshot playersSnapshot = await playersCollection
         .orderBy('timestamp', descending: true)
-        .limit(2)
+        .limit(10) // Limitamos a los últimos 10 jugadores para optimizar
         .get();
 
-    if (playersSnapshot.docs.length == 2) {
-      var player1 = playersSnapshot.docs[0];
-      var player2 = playersSnapshot.docs[1];
+    DateTime now = DateTime.now();
+
+    // Filtramos los jugadores con menos de un minuto de antigüedad
+    List<QueryDocumentSnapshot> recentPlayers = playersSnapshot.docs.where((doc) {
+      Timestamp timestamp = doc['timestamp'] as Timestamp;
+      DateTime playerTime = timestamp.toDate();
+      return now.difference(playerTime).inSeconds < 30;
+    }).toList();
+
+    if (recentPlayers.length >= 2) {
+      var player1 = recentPlayers[0];
+      var player2 = recentPlayers[1];
 
       if (player1.id == _playerId || player2.id == _playerId) {
         _timer?.cancel();
@@ -120,7 +129,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               TextField(
                 controller: _nameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Escribe tu nombre',
                 ),
@@ -139,10 +148,10 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         if (isSearching)
-          Positioned(
+          const Positioned(
             bottom: 16,
             right: 16,
-            child: const Text(
+            child: Text(
               'Buscando partida..',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),

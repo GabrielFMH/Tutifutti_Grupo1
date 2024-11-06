@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'resultado.dart'; // Importa el nuevo archivo de resultados
+import 'resultado.dart';
 
 class PartidaPage extends StatefulWidget {
   final String player1Id;
@@ -25,8 +25,9 @@ class PartidaPage extends StatefulWidget {
 
 class _PartidaPageState extends State<PartidaPage> {
   String letraInicial = '';
-  bool terminado = false; 
-  bool esperandoJugador = true; 
+  bool terminado = false;
+  bool esperandoJugador = true;
+  final String _playerId = Random().nextInt(1000000).toString(); // Genera un ID único para cada jugador
   Map<String, TextEditingController> campos = {
     'Nombre': TextEditingController(),
     'Apellido': TextEditingController(),
@@ -52,7 +53,7 @@ class _PartidaPageState extends State<PartidaPage> {
           if (salaDoc.data()?['letraInicial'] != null) {
             setState(() {
               letraInicial = salaDoc['letraInicial'];
-              esperandoJugador = false; 
+              esperandoJugador = false;
             });
           } else {
             letraInicial = generarLetraInicial();
@@ -79,6 +80,13 @@ class _PartidaPageState extends State<PartidaPage> {
         setState(() {
           terminado = true;
         });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ResultadosPage(
+                    player1Id: widget.player1Id,
+                  )),
+        );
       }
     });
   }
@@ -97,13 +105,13 @@ class _PartidaPageState extends State<PartidaPage> {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data['matches'].isEmpty; 
+      return data['matches'].isEmpty;
     } else {
       throw Exception('Error al verificar la ortografía');
     }
   }
 
-  Future<void> _guardarDatosJugador() async {
+  Future<void> _guardarDatosJugador(String jugadorId, String jugadorName) async {
     Map<String, String> palabras = {};
     for (var entry in campos.entries) {
       String categoria = entry.key;
@@ -116,23 +124,33 @@ class _PartidaPageState extends State<PartidaPage> {
         .collection('sala')
         .doc(widget.player1Id)
         .collection('jugadores')
-        .doc(widget.player1Id)
+        .doc(jugadorId)
         .set({
+      'nombre': jugadorName,
       'respuestas': palabras,
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
-  void _bastaButtonPressed() async {
-    await _guardarDatosJugador();
-    await FirebaseFirestore.instance
+  Future<void> _bastaButtonPressed() async {
+    final isPlayer1 = _playerId == widget.player1Id;
+
+    // Guardar los datos del jugador que presionó "BASTA" sin duplicar datos para el otro jugador
+    await _guardarDatosJugador(_playerId, isPlayer1 ? widget.player1Name : widget.player2Name);
+
+    // Actualizar el estado de la partida a terminado solo si ambos jugadores tienen datos
+    final jugadoresCollection = FirebaseFirestore.instance
         .collection('sala')
         .doc(widget.player1Id)
-        .update({'terminado': true});
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ResultadosPage(player1Id: widget.player1Id)),
-    );
+        .collection('jugadores');
+
+    final jugadoresSnapshot = await jugadoresCollection.get();
+    if (jugadoresSnapshot.docs.length == 2) {
+      await FirebaseFirestore.instance
+          .collection('sala')
+          .doc(widget.player1Id)
+          .update({'terminado': true});
+    }
   }
 
   @override
@@ -167,7 +185,7 @@ class _PartidaPageState extends State<PartidaPage> {
                           TextField(
                             controller: campos[key],
                             decoration: InputDecoration(hintText: 'Palabra con $letraInicial'),
-                            enabled: !terminado, 
+                            enabled: !terminado,
                           ),
                         ),
                       ]);

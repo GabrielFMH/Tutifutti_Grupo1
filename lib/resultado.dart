@@ -12,6 +12,7 @@ class ResultadosPage extends StatelessWidget {
         .doc(player1Id)
         .collection('jugadores')
         .get();
+
     return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
   }
 
@@ -52,10 +53,11 @@ class ResultadosPage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       Map<String, dynamic> jugador = resultados[index];
                       Map<String, dynamic> respuestas = jugador['respuestas'];
+                      String nombreJugador = "Jugador ${index + 1}";
                       int puntuacion = calcularPuntuacion(respuestas);
 
                       return _buildScoreCard(
-                        jugador['timestamp'].toString(),
+                        nombreJugador,
                         respuestas,
                         puntuacion,
                         index.isEven ? Colors.blue : Colors.green,
@@ -75,13 +77,13 @@ class ResultadosPage extends StatelessWidget {
     int puntuacion = 0;
     respuestas.forEach((categoria, palabra) {
       if (palabra != 'Palabra no válida') {
-        puntuacion += 100; // Puntos por palabra válida
+        puntuacion += 100;
       }
     });
     return puntuacion;
   }
 
-  Widget _buildScoreCard(String jugador, Map<String, dynamic> respuestas, int puntuacion, Color color) {
+  Widget _buildScoreCard(String nombreJugador, Map<String, dynamic> respuestas, int puntuacion, Color color) {
     return Card(
       color: color.withOpacity(0.2),
       shape: RoundedRectangleBorder(
@@ -93,7 +95,7 @@ class ResultadosPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Jugador: $jugador',
+              nombreJugador,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
             ),
             SizedBox(height: 10),
